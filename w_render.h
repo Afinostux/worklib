@@ -9,7 +9,8 @@ struct camera {
 };
 
 enum {
-   RA_MESH
+   RA_MESH,
+   RA_LINESEG,
 };
 
 struct render_atom {
@@ -20,12 +21,16 @@ struct render_atom {
    float percent;
    union {
       mesh * mesh;
+      struct {
+         v3 point[2];
+         color c;
+      } lineseg;
    };
 };
 
-typedef pool<render_atom> atom_pool;
-typedef array<render_atom> atom_array;
-typedef array<render_atom*> atom_frame;
+struct atom_pool POOL(render_atom);
+struct atom_array ARRAY(render_atom,GROW_ADD(4));
+struct atom_frame ARRAY(render_atom*,GROW_ADD(4));
 
 struct {
    int w, h;
@@ -75,21 +80,18 @@ void loadCameraMatrix( camera * c )
 
 void render3D() {
    globalrender.sortedframe.clear();
-
    for (u32 i = 0; i < globalrender.per.count(); i++) {
       render_atom * ra = globalrender.per.get(i);
       if (ra) {
          globalrender.sortedframe.add(ra);
       }
    }
-
    for (u32 i = 0; i < globalrender.imm.count; i++) {
       render_atom * ra = globalrender.imm + i;
       if (ra) {
          globalrender.sortedframe.add(ra);
       }
    }
-
    loadCameraMatrix(&globalrender.cam);
    m44 tm;
    for (u32 i = 0; i < globalrender.sortedframe.count; i++) {
@@ -100,14 +102,23 @@ void render3D() {
       glMultMatrixf(tm.m);
       switch (ra->type) {
          case RA_MESH:
-            ra->mesh->draw(ra->s, ra->percent);
-            break;
+            {
+               ra->mesh->draw(ra->s, ra->percent);
+            } break;
+         case RA_LINESEG:
+            {
+               glUseProgram(0);
+               glBindBuffer(GL_ARRAY_BUFFER, 0);
+               glEnableClientState(GL_VERTEX_ARRAY);
+               glColor4ubv(ra->lineseg.c.m);
+               glVertexPointer(3, GL_FLOAT, 0, ra->lineseg.point);
+               glDisableClientState(GL_VERTEX_ARRAY);
+            } break;
          default:
             continue;
       }
       glPopMatrix();
    }
-
    globalrender.imm.clear();
 }
 
@@ -119,6 +130,16 @@ void dimmMesh(const transform& t, mesh * m, shader * s, float p)
    ra.s = s;
    ra.mesh = m;
    ra.percent = p;
+   globalrender.imm.add(ra);
+}
+
+void dimmLineseg(const v3 & a, const v3 & b, const color & c)
+{
+   render_atom ra = {};
+   ra.type = RA_MESH;
+   ra.lineseg.point[0] = a;
+   ra.lineseg.point[1] = b;
+   ra.lineseg.c = c;
    globalrender.imm.add(ra);
 }
 

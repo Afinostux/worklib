@@ -84,7 +84,7 @@ int checkGLerr()
 
 #define LINELEN 512
 struct shadersource {
-   array<char*> lines;
+   struct ARRAY(char*,GROW_ADD(16)) lines;
 
    void destroy() {
       for (u32 i = 0; i < lines.count; i++) {

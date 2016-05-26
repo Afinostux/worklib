@@ -192,6 +192,27 @@ union v3 {
    void print() const {
       print(0);
    }
+   
+   v3& operator+=(const v3& other) {
+      x += other.x;
+      y += other.y;
+      z += other.z;
+      return *this;
+   }
+
+   v3& operator-=(const v3& other) {
+      x -= other.x;
+      y -= other.y;
+      z -= other.z;
+      return *this;
+   }
+
+   v3& operator*(float other) {
+      x *= other;
+      y *= other;
+      z *= other;
+      return *this;
+   }
 };
 
 //static const v3 viewforward = {0, 0, 1};
@@ -976,6 +997,7 @@ quat rotateQuat(const quat& src, const quat& dest)
    return res;
 }
 
+#if 0
 quat lookat(const v3& src, const v3& dst)
 {
    v3 forward = (dst - src).normalize();
@@ -996,6 +1018,7 @@ quat lookat(const v3& src, const v3& dst)
    v3 axis = (viewforward ^ forward).normalize();
    return makequat(RADTODEG * angle, axis);
 }
+#endif
 
 void quickrotate(const quat& q, v3 * v)
 {
